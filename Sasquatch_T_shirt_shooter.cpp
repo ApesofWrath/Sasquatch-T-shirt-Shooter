@@ -67,12 +67,70 @@ unsigned long startTime = 0;
 
 unsigned char val = 127;
 
-void setup()
+// !!! DO NOT MODIFY !!!
+void loop()
 {
-	/* Initiate comms */
-	RobotOpen.begin(&enabled, &disabled, &timedtasks);
-	compressorShutoff.pullUp();
+	RobotOpen.syncDS();
 }
+
+char pressure()
+{
+	// Max = 1023
+	float percent = pressureSensor.read() / 1023.0;
+	// adjust for calibration
+	float skewed = ((percent * (MAX_P_V - MIN_P_V)) + MIN_P_V) / 5.0;
+	// Max PSI is 87
+	float psi = skewed * 87.0;
+	float bar = skewed * 6.0;
+	// change to bar to output in bars
+	float out = psi;
+	return (char) out;
+}
+
+boolean timesUp()
+{
+	return (millis() - startTime) >= (1000 / rateLED);
+}
+
+//possible states:
+// ON, BLINK, OFF, or other number to blink x number of times per second
+// If negative, it disables the light
+// bps = blinks per second
+void statusLEDSet(float bps)
+{
+	//RODashboard.debug(itoa(bps, "   ", 3));
+	rateLED = bps;
+	rateLED = constrain(rateLED, -1, 127);
+	if (rateLED > 0 && timesUp())
+	{
+		//RODashboard.debug("blink rateLED>0");
+		startTime = millis();
+		led = ~led;
+	}
+	else if (rateLED == ON)
+	{
+		//RODashboard.debug("on");
+		led = 1;
+	}
+	else if (rateLED == OFF)
+	{
+		//RODashboard.debug("off");
+		led = 0;
+	}
+}
+
+boolean atPressure()
+{
+	return ((pressure() - targetPSI.get()) > -THRESHOLD);
+}
+
+void setLEDs(int rgb)
+{
+	red.write(0xFF & (rgb << 0));
+	green.write(0xFF & (rgb << 2));
+	blue.write(0xFF & (rgb << 4));
+}
+
 
 /* This is your primary robot loop - all of your code
  * should live here that allows the robot to operate
@@ -178,8 +236,7 @@ void enabled()
 void disabled()
 {
 	// safety code
-	COMP_OFF
-	;
+	COMP_OFF;
 }
 
 /* This loop ALWAYS runs - only place code here that can run during a disabled state
@@ -218,66 +275,9 @@ void timedtasks()
 	RODashboard.publish("Battery Voltage", ROStatus.batteryReading());
 }
 
-// !!! DO NOT MODIFY !!!
-void loop()
+void setup()
 {
-	RobotOpen.syncDS();
-}
-
-char pressure()
-{
-	// Max = 1023
-	float percent = pressureSensor.read() / 1023.0;
-	// adjust for calibration
-	float skewed = ((percent * (MAX_P_V - MIN_P_V)) + MIN_P_V) / 5.0;
-	// Max PSI is 87
-	float psi = skewed * 87.0;
-	float bar = skewed * 6.0;
-	// change to bar to output in bars
-	float out = psi;
-	return (char) out;
-}
-
-//possible states:
-// ON, BLINK, OFF, or other number to blink x number of times per second
-// If negative, it disables the light
-// bps = blinks per second
-void statusLEDSet(float bps)
-{
-	//RODashboard.debug(itoa(bps, "   ", 3));
-	rateLED = bps;
-	rateLED = constrain(rateLED, -1, 127);
-	if (rateLED > 0 && timesUp())
-	{
-		//RODashboard.debug("blink rateLED>0");
-		startTime = millis();
-		led = ~led;
-	}
-	else if (rateLED == ON)
-	{
-		//RODashboard.debug("on");
-		led = 1;
-	}
-	else if (rateLED == OFF)
-	{
-		//RODashboard.debug("off");
-		led = 0;
-	}
-}
-
-boolean timesUp()
-{
-	return (millis() - startTime) >= (1000 / rateLED);
-}
-
-boolean atPressure()
-{
-	return ((pressure() - targetPSI.get()) > -THRESHOLD);
-}
-
-void setLEDs(int rgb)
-{
-	red.write(0xFF & (rgb << 0));
-	green.write(0xFF & (rgb << 2));
-	blue.write(0xFF & (rgb << 4));
+	/* Initiate comms */
+	RobotOpen.begin(&enabled, &disabled, &timedtasks);
+	compressorShutoff.pullUp();
 }

@@ -37,7 +37,7 @@
 #define LAVENDER	(0x8080FF)
 
 #define EGG			(0xFFFF80)
-#define PINK		(0xFF80FF)
+#define LIGHT_MAGENTA (0xFF80FF)
 #define TEAL2		(0x80FFFF)
 
 #define BLACK		(0x000000)

@@ -281,3 +281,13 @@ void setup()
 	RobotOpen.begin(&enabled, &disabled, &timedtasks);
 	compressorShutoff.pullUp();
 }
+
+/*#ifdef ECLIPSE
+
+int main (int argc, char** argv)
+{
+	init();
+	for(;;) loop();
+}
+#endif
+*/

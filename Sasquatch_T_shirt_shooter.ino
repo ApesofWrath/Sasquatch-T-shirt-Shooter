@@ -1,9 +1,9 @@
+#include <RobotOpen.h>
 #include <SPI.h>
 #include <SD.h>
 #include <Ethernet.h>
 #include <Servo.h>
 #include <EEPROM.h>
-#include <RobotOpen.h>
 
 #include "colors.h"
 
@@ -12,8 +12,8 @@
 #define ARCADE      (usb1.btnX())
 #define TANK        (usb1.btnY())
 #define FIRE        (usb1.btnLShoulder() || usb1.btnRShoulder())
-#define COMP_ON		compressor0.off(); compressor1.off();
-#define COMP_OFF	compressor0.on(); compressor1.on();
+#define COMP_OFF	compressor0.off(); compressor1.off();
+#define COMP_ON  	compressor0.on(); compressor1.on();
 
 #define LIFT_SPEED  (0.3)
 #define MAX_PSI     (67.0)
@@ -33,15 +33,13 @@
 /* I/O Setup */
 ROJoystick usb1(1);         // Joystick #1
 
-ROPWM leftDriveFront(0);
-ROPWM leftDriveBack(1);
-ROPWM rightDriveFront(2);
-ROPWM rightDriveBack(3);
-ROPWM lift(5);
-ROPWM red(6);
-ROPWM green(7);
-ROPWM blue(8);
-
+ROPWM leftDriveFront(3);
+ROPWM leftDriveBack(4);
+ROPWM rightDriveFront(5);
+ROPWM rightDriveBack(6);
+ROPWM lift(7);
+// PWM 0, 1, and 2
+unsigned char red = 4, green = 5, blue = 12;
 
 RODigitalIO compressor0(0, OUTPUT);
 RODigitalIO compressor1(1, OUTPUT);
@@ -124,19 +122,21 @@ boolean atPressure()
 	return ((pressure() - targetPSI.get()) > -THRESHOLD);
 }
 
-void setLEDs(int rgb)
+void setLEDs(unsigned long rgb)
 {
-	red.write(0xFF & (rgb << 0));
-	green.write(0xFF & (rgb << 2));
-	blue.write(0xFF & (rgb << 4));
+	analogWrite(red, (0xFF & (rgb >> 4)));
+	analogWrite(green, (0xFF & (rgb >> 2)));
+	analogWrite(blue, (0xFF & (rgb >> 0)));
+	RODashboard.publish("RGB", (long) rgb);
+	RODashboard.publish("G", (long) (0xFF & (rgb >> 2)));
 }
-
 
 /* This is your primary robot loop - all of your code
  * should live here that allows the robot to operate
  */
 void enabled()
 {
+	setLEDs(WHITE);
 	// Drive
 	int leftPower = 0;
 	int rightPower = 0;
@@ -236,7 +236,8 @@ void enabled()
 void disabled()
 {
 	// safety code
-	COMP_OFF;
+	COMP_OFF
+	;
 }
 
 /* This loop ALWAYS runs - only place code here that can run during a disabled state
@@ -284,10 +285,10 @@ void setup()
 
 /*#ifdef ECLIPSE
 
-int main (int argc, char** argv)
-{
-	init();
-	for(;;) loop();
-}
-#endif
-*/
+ int main (int argc, char** argv)
+ {
+ init();
+ for(;;) loop();
+ }
+ #endif
+ */

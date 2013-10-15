@@ -33,6 +33,7 @@
 /* I/O Setup */
 ROJoystick usb1(1);         // Joystick #1
 
+<<<<<<< HEAD
 ROPWM leftDriveFront(3);
 ROPWM leftDriveBack(4);
 ROPWM rightDriveFront(5);
@@ -40,6 +41,14 @@ ROPWM rightDriveBack(6);
 ROPWM lift(7);
 // PWM 0, 1, and 2
 unsigned char red = 4, green = 5, blue = 12;
+=======
+ROPWM leftDriveFront(0);
+ROPWM leftDriveBack(1);
+ROPWM rightDriveFront(2);
+ROPWM rightDriveBack(3);
+ROPWM lift(4);
+unsigned char red = 5, green = 6, blue = 7;
+>>>>>>> 79aefc6874062e58c684ea52cb81fad0c6141bbd
 
 RODigitalIO compressor0(0, OUTPUT);
 RODigitalIO compressor1(1, OUTPUT);

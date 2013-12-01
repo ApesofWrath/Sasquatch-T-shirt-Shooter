@@ -15,6 +15,8 @@
 #define COMP_OFF	compressor0.off(); compressor1.off();
 #define COMP_ON  	compressor0.on(); compressor1.on();
 
+//#define LEDS
+
 #define LIFT_SPEED  (0.3)
 #define MAX_PSI     (67.0)
 #define MAX_P_V     (5.0)
@@ -38,7 +40,9 @@ ROPWM leftDriveBack(1);
 ROPWM rightDriveFront(2);
 ROPWM rightDriveBack(3);
 ROPWM lift(4);
+#ifdef LEDS
 char red = 28, green = 29, blue = 30;
+#endif
 
 RODigitalIO compressor0(0, OUTPUT);
 RODigitalIO compressor1(1, OUTPUT);
@@ -53,7 +57,10 @@ ROSolenoid fire1(1);
 ROSolenoid statusLED(7);
 
 ROCharParameter targetPSI("Target Pressure", 0);
+
+#ifdef LEDS
 ROLongParameter RGB("RGB", BLACK);
+#endif
 
 boolean led = false;
 boolean tank = true;
@@ -71,7 +78,7 @@ void loop()
   RobotOpen.syncDS();
 }
 
-char pressure()
+float pressure()
 {
   // Max = 1023
   float percent = pressureSensor.read() / 1023.0;
@@ -82,7 +89,7 @@ char pressure()
   float bar = skewed * 6.0;
   // change to bar to output in bars
   float out = psi;
-  return (char) out;
+  return out;
 }
 
 boolean timesUp()
@@ -122,6 +129,7 @@ boolean atPressure()
   return ((pressure() - targetPSI.get()) > -THRESHOLD);
 }
 
+#ifdef LEDS
 void setLEDs(unsigned long rgb)
 {
   analogWrite(red, 0xFF & ((0x00FF0000 & rgb) >> 4));
@@ -132,12 +140,13 @@ void setLEDs(unsigned long rgb)
   RODashboard.publish("G", (long)(0xFF & (rgb >> 2)));        
   RODashboard.publish("B", (long)(0xFF & (rgb >> 0)));        
 }
+#endif
 
 
 /* This is your primary robot loop - all of your code
  * should live here that allows the robot to operate
  */
-#define SWITCH
+//#define SWITCH
 void enabled()
 {
 #ifdef SWITCH
@@ -146,7 +155,11 @@ void enabled()
   case 0:
     {
 #endif
+
+#ifdef LEDS
       setLEDs((unsigned long)RGB.get());
+#endif
+
 #ifdef SWITCH
 
     }
@@ -315,7 +328,7 @@ void timedtasks()
   else
     statusLED.off();
 
-  RODashboard.publish("Compressor", compressor0.read());
+  //RODashboard.publish("Compressor", compressor0.read());
   //RODashboard.publish("Status LED", led);
   //RODashboard.publish("Compressor Shutoff", SHUTOFF);
   //RODashboard.publish("D-Pad & lift", val);

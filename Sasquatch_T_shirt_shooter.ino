@@ -50,6 +50,9 @@ RODigitalIO compressor1(1, OUTPUT);
 //#define COMPRESSORSHUTOFFOVERRIDE
 RODigitalIO compressorShutoff(2, INPUT);
 
+RODigitalIO limitSwitchTop(3, INPUT);
+RODigitalIO limitSwitchBottom(4, INPUT);
+
 ROAnalog pressureSensor(0);
 
 ROSolenoid fire0(0);
@@ -279,6 +282,12 @@ void enabled()
         val = (float) (127.0 - (LIFT_SPEED * 128.0));
 
       lift.write(val);
+    
+    if (!limitSwitchTop.read() && val > 0)  
+      val = 0;
+if (!limitSwitchBottom.read() && val < 0) 
+  val = 0;
+  
 #ifdef SWITCH
 
     }
@@ -349,6 +358,8 @@ void setup()
   /* Initiate comms */
   RobotOpen.begin(&enabled, &disabled, &timedtasks);
   compressorShutoff.pullUp();
+  limitSwitchTop.pullUp();
+limitSwitchBottom.pullUp();
   //setLEDs(CYAN);
 
 }

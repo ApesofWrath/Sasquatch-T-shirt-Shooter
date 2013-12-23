@@ -7,14 +7,55 @@
 
 #include "colors.h"
 
+/*Button Map
+A - pressurize
+B - N/A
+X - Arcade
+Y - Tank
+Left Shoulder - Fire
+Left Trigger - N/A
+Right Shoulder - Fire
+Right Trigger - N/A
+Left Stick Button - N/A
+Right Stick Button - N/A
+Start - Shift up
+Select - Shift Down
+*/
+
+/* Port Assignments
+ROPWMs
+ROPWM O - leftDriveFront
+ROPWM 1 - leftDriveBack
+ROPWM 2 - rightDriveFront
+ROPWM 3 - rightDriveBack
+ROPWM 4 - lift
+RODigitalIOs
+RODigitalIO 0, output - compressor0
+RODigitalIO 1, output -  compressor1
+RODigitalIO 2, input - compressorShutoff
+RODigitalIO 3, input - limitSwitchTop
+RODigitalIO 4, input - limitSwitchBottom
+ROAnaglog
+ROAnalog 0 - pressureSensor
+ROSolenoids
+ROSolenoid O -  fire0
+ROSolenoid 1 -  fire1
+ROSolenoid 2 - shiftUp
+ROSolenoid 3 - shiftDown
+ROSolenoid 7 - statusLED
+*/
+
 // #defines
 #define PRESSURIZE  (usb1.btnA())
 #define ARCADE      (usb1.btnX())
 #define TANK        (usb1.btnY())
 #define FIRE        (usb1.btnLShoulder() || usb1.btnRShoulder())
-#define COMP_OFF	compressor0.off(); compressor1.off();
-#define COMP_ON  	compressor0.on(); compressor1.on();
+#define SHIFT_UP    (usb1.btnStart())
+#define SHIFT_DOWN  (usb1.btnSelect())
+#define COMP_OFF    compressor0.off(); compressor1.off();
+#define COMP_ON     compressor0.on(); compressor1.on();
 
+ 
 //#define LEDS
 
 #define LIFT_SPEED  (0.3)
@@ -32,7 +73,7 @@
 // in case we have to invert it
 #define SHUTOFF     (compressorShutoff.read())
 
-/* I/O Setup */
+// I/O Setup 
 ROJoystick usb1(1);         // Joystick #1
 
 ROPWM leftDriveFront(0);
@@ -57,6 +98,8 @@ ROAnalog pressureSensor(0);
 
 ROSolenoid fire0(0);
 ROSolenoid fire1(1);
+ROSolenoid shiftUp(2);
+ROSolenoid shiftDown(3);
 ROSolenoid statusLED(7);
 
 ROCharParameter targetPSI("Target Pressure", 0);
@@ -149,29 +192,14 @@ void setLEDs(unsigned long rgb)
 /* This is your primary robot loop - all of your code
  * should live here that allows the robot to operate
  */
-//#define SWITCH
 void enabled()
 {
-#ifdef SWITCH
-  switch (count%20)
-  {
-  case 0:
-    {
-#endif
 
 #ifdef LEDS
       setLEDs((unsigned long)RGB.get());
 #endif
 
-#ifdef SWITCH
-
-    }
-    break;
-
-  case 1:
-    {
-#endif
-      // Drive
+      // drive
       int leftPower = 0;
       int rightPower = 0;
       if (tank)
@@ -191,7 +219,8 @@ void enabled()
       leftDriveBack.write(leftPower);
       rightDriveFront.write(rightPower);
       rightDriveBack.write(rightPower);
-      // Button Handling
+      
+      //switches between tank and arcade
       if (TANK)
       {
         tank = true;
@@ -200,14 +229,20 @@ void enabled()
       {
         tank = false;
       }
-#ifdef SWITCH
-
-    }
-    break;
-
-  case 2:
-    {
-#endif
+      
+      //shifts
+      if (SHIFT_UP)
+      {
+        shiftUp.on();
+        shiftDown.off();
+      }
+      else if (SHIFT_DOWN)
+      {
+        shiftUp.off();
+        shiftDown.on();
+      }
+      
+      //compressor handling
       if (PRESSURIZE || !atPressure())
       {
         if (SHUTOFF)
@@ -249,14 +284,8 @@ void enabled()
       {
         statusLEDSet(OFF);
       }
-#ifdef SWITCH
-
-    }
-    break;
-
-  case 3:
-    {
-#endif
+      
+      //buttons and valves to fire
       if (FIRE)
       {
         fire0.on();
@@ -267,26 +296,20 @@ void enabled()
         fire0.off();
         fire1.off();
       }
-#ifdef SWITCH
-
-    }
-    break;
-
-  case 4:
-    {
-#endif
+      //lifts the barrel
       unsigned char val = 127;
-      if (usb1.dPadUp())
+      if (usb1.dPadUp()
         val = (float) (127.0 + (LIFT_SPEED * 128.0));
       if (usb1.dPadDown())
         val = (float) (127.0 - (LIFT_SPEED * 128.0));
 
-      lift.write(val);
-    
+    //limit switches at top and bottom to limit movement of the barrel
     if (!limitSwitchTop.read() && val > 0)  
       val = 0;
 if (!limitSwitchBottom.read() && val < 0) 
   val = 0;
+  
+  lift.write(val);
   
 #ifdef SWITCH
 
@@ -319,38 +342,37 @@ void timedtasks()
   if (ROStatus.isEnabled() && rateLED <= 0)
   {
     statusLEDSet(BLINK);
-    //RODashboard.debug("blink");
   }
   else if (!ROStatus.isEnabled() && rateLED != OFF)
   {
     statusLEDSet(OFF);
-    //RODashboard.debug("off");
   }
   if (timesUp() && rateLED > 0)
   {
-    //RODashboard.debug("invert");
     statusLEDSet(rateLED);
-    //    flashLED.queue(1000/rateLED);
+   
   }
   if (led)
     statusLED.on();
   else
     statusLED.off();
-
-  //RODashboard.publish("Compressor", compressor0.read());
-  //RODashboard.publish("Status LED", led);
-  //RODashboard.publish("Compressor Shutoff", SHUTOFF);
-  //RODashboard.publish("D-Pad & lift", val);
+    
   RODashboard.publish("Target Pressure", targetPSI.get());
   RODashboard.publish("At Pressure?", atPressure());
   RODashboard.publish("Pressure", pressure());
   RODashboard.publish("Battery Voltage", ROStatus.batteryReading());
-  /*        RODashboard.publish("sizeof char", (int)sizeof(char));
+
+  RODashboard.publish("Compressor", compressor0.read());
+  RODashboard.publish("Status LED", led);
+  RODashboard.publish("Compressor Shutoff", SHUTOFF);
+  RODashboard.publish("D-Pad & lift", val);
+ 
+  /* RODashboard.publish("sizeof char", (int)sizeof(char));
    RODashboard.publish("sizeof short", (int)sizeof(short));
    RODashboard.publish("sizeof int", (int)sizeof(int));
    RODashboard.publish("sizeof long", (int)sizeof(long));
    RODashboard.publish("sizeof long long", (int)sizeof(long long));
-   */
+ */
 }
 
 void setup()
@@ -361,7 +383,6 @@ void setup()
   limitSwitchTop.pullUp();
 limitSwitchBottom.pullUp();
   //setLEDs(CYAN);
-
 }
 
 

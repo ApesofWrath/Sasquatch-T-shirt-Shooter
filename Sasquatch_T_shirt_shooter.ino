@@ -298,7 +298,7 @@ void enabled()
   }
   //lifts the barrel
   unsigned char val = 127;
-  if (usb1.dPadUp()
+  if (usb1.dPadUp())
     val = (float) (127.0 + (LIFT_SPEED * 128.0));
   if (usb1.dPadDown())
     val = (float) (127.0 - (LIFT_SPEED * 128.0));

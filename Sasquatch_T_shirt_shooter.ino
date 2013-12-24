@@ -196,133 +196,120 @@ void enabled()
 {
 
 #ifdef LEDS
-      setLEDs((unsigned long)RGB.get());
+  setLEDs((unsigned long)RGB.get());
 #endif
 
-      // drive
-      int leftPower = 0;
-      int rightPower = 0;
-      if (tank)
-      {
-        leftPower = usb1.leftY();
-        rightPower = usb1.rightY();
-      }
-      else
-      {
-        leftPower =
-          constrain(255 - (usb1.rightY() - usb1.rightX() + 127), 0, 255);
-        rightPower =
-          constrain(255 - (usb1.rightY() + usb1.rightX() - 127), 0, 255);
-      }
+  // drive
+  int leftPower = 0;
+  int rightPower = 0;
+  if (tank)
+  {
+    leftPower = usb1.leftY();
+    rightPower = usb1.rightY();
+  }
+  else
+  {
+    leftPower =
+      constrain(255 - (usb1.rightY() - usb1.rightX() + 127), 0, 255);
+    rightPower =
+      constrain(255 - (usb1.rightY() + usb1.rightX() - 127), 0, 255);
+  }
 
-      leftDriveFront.write(leftPower);
-      leftDriveBack.write(leftPower);
-      rightDriveFront.write(rightPower);
-      rightDriveBack.write(rightPower);
-      
-      //switches between tank and arcade
-      if (TANK)
-      {
-        tank = true;
-      }
-      if (ARCADE)
-      {
-        tank = false;
-      }
-      
-      //shifts
-      if (SHIFT_UP)
-      {
-        shiftUp.on();
-        shiftDown.off();
-      }
-      else if (SHIFT_DOWN)
-      {
-        shiftUp.off();
-        shiftDown.on();
-      }
-      
-      //compressor handling
-      if (PRESSURIZE || !atPressure())
-      {
-        if (SHUTOFF)
-        {
-          RODashboard.debug(
-          "Either you have exceeded the maximum tank Pressure or the pressure switch"
-            "is not connected (to Digital IO 1)");
-        }
+  leftDriveFront.write(leftPower);
+  leftDriveBack.write(leftPower);
+  rightDriveFront.write(rightPower);
+  rightDriveBack.write(rightPower);
+  
+  //switches between tank and arcade
+  if (TANK)
+  {
+    tank = true;
+  }
+  if (ARCADE)
+  {
+    tank = false;
+  }
+  
+  //shifts
+  if (SHIFT_UP)
+  {
+    shiftUp.on();
+    shiftDown.off();
+  }
+  else if (SHIFT_DOWN)
+  {
+    shiftUp.off();
+    shiftDown.on();
+  }
+  
+  //compressor handling
+  if (PRESSURIZE || !atPressure())
+  {
+    if (SHUTOFF)
+    {
+      RODashboard.debug(
+      "Either you have exceeded the maximum tank Pressure or the pressure switch"
+        "is not connected (to Digital IO 1)");
+    }
 
 #ifndef COMPRESSORSHUTOFFOVERRIDE
-        if (!((pressure() >= MAX_PSI) || (SHUTOFF)))
+    if (!((pressure() >= MAX_PSI) || (SHUTOFF)))
 #else
-          if (!((pressure() >= MAX_PSI)))
+      if (!((pressure() >= MAX_PSI)))
 #endif
-          {
-            if (timesUp() || rateLED != BLINKFAST)
-            {
-              statusLEDSet(BLINKFAST);
-            }
-            compressing = true;
-            COMP_ON
-              ;
-          }
-      }
-      else
       {
-        compressing = false;
-        COMP_OFF
+        if (timesUp() || rateLED != BLINKFAST)
+        {
+          statusLEDSet(BLINKFAST);
+        }
+        compressing = true;
+        COMP_ON
+          ;
       }
-      if (!compressing && rateLED == BLINKFAST)
-      {
-        statusLEDSet(OFF);
-      }
-      if (SHUTOFF && (PRESSURIZE || compressing) && rateLED != ERR)
-      {
-        statusLEDSet(ERR);
-      }
-      else if (SHUTOFF && (!PRESSURIZE && !compressing) && rateLED == ERR)
-      {
-        statusLEDSet(OFF);
-      }
-      
-      //buttons and valves to fire
-      if (FIRE)
-      {
-        fire0.on();
-        fire1.on();
-      }
-      else
-      {
-        fire0.off();
-        fire1.off();
-      }
-      //lifts the barrel
-      unsigned char val = 127;
-      if (usb1.dPadUp()
-        val = (float) (127.0 + (LIFT_SPEED * 128.0));
-      if (usb1.dPadDown())
-        val = (float) (127.0 - (LIFT_SPEED * 128.0));
-
-    //limit switches at top and bottom to limit movement of the barrel
-    if (!limitSwitchTop.read() && val > 0)  
-      val = 0;
-if (!limitSwitchBottom.read() && val < 0) 
-  val = 0;
-  
-  lift.write(val);
-  
-#ifdef SWITCH
-
-    }
-    break;
-
-  default:
-    {
-      count = 0;
-    }
-    break;
   }
-#endif
+  else
+  {
+    compressing = false;
+    COMP_OFF
+  }
+  if (!compressing && rateLED == BLINKFAST)
+  {
+    statusLEDSet(OFF);
+  }
+  if (SHUTOFF && (PRESSURIZE || compressing) && rateLED != ERR)
+  {
+    statusLEDSet(ERR);
+  }
+  else if (SHUTOFF && (!PRESSURIZE && !compressing) && rateLED == ERR)
+  {
+    statusLEDSet(OFF);
+  }
+  
+  //buttons and valves to fire
+  if (FIRE)
+  {
+    fire0.on();
+    fire1.on();
+  }
+  else
+  {
+    fire0.off();
+    fire1.off();
+  }
+  //lifts the barrel
+  unsigned char val = 127;
+  if (usb1.dPadUp()
+    val = (float) (127.0 + (LIFT_SPEED * 128.0));
+  if (usb1.dPadDown())
+    val = (float) (127.0 - (LIFT_SPEED * 128.0));
+
+  //limit switches at top and bottom to limit movement of the barrel
+  if (!limitSwitchTop.read() && val > 0)  
+    val = 0;
+  if (!limitSwitchBottom.read() && val < 0) 
+    val = 0;
+
+  lift.write(val);
 }
 
 /* This is called while the robot is disabled
@@ -361,18 +348,18 @@ void timedtasks()
   RODashboard.publish("At Pressure?", atPressure());
   RODashboard.publish("Pressure", pressure());
   RODashboard.publish("Battery Voltage", ROStatus.batteryReading());
-
+/*
   RODashboard.publish("Compressor", compressor0.read());
   RODashboard.publish("Status LED", led);
   RODashboard.publish("Compressor Shutoff", SHUTOFF);
   RODashboard.publish("D-Pad & lift", val);
- 
-  /* RODashboard.publish("sizeof char", (int)sizeof(char));
-   RODashboard.publish("sizeof short", (int)sizeof(short));
-   RODashboard.publish("sizeof int", (int)sizeof(int));
-   RODashboard.publish("sizeof long", (int)sizeof(long));
-   RODashboard.publish("sizeof long long", (int)sizeof(long long));
  */
+ /* RODashboard.publish("sizeof char", (int)sizeof(char));
+  RODashboard.publish("sizeof short", (int)sizeof(short));
+  RODashboard.publish("sizeof int", (int)sizeof(int));
+  RODashboard.publish("sizeof long", (int)sizeof(long));
+  RODashboard.publish("sizeof long long", (int)sizeof(long long));
+  */
 }
 
 void setup()
@@ -381,7 +368,7 @@ void setup()
   RobotOpen.begin(&enabled, &disabled, &timedtasks);
   compressorShutoff.pullUp();
   limitSwitchTop.pullUp();
-limitSwitchBottom.pullUp();
+  limitSwitchBottom.pullUp();
   //setLEDs(CYAN);
 }
 

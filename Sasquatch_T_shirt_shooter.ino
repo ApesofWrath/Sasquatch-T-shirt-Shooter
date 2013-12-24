@@ -66,7 +66,7 @@ ROSolenoid 7 - statusLED
 #define OFF         (-1)
 #define BLINK       (2)
 #define BLINKFAST   (4)
-#define ERR         (7)
+#define ERR         (9)
 
 #define THRESHOLD   (3)
 

@@ -35,11 +35,10 @@ RODigitalIO 1, output -  compressor1
 RODigitalIO 2, input - compressorShutoff
 RODigitalIO 3, input - limitSwitchTop
 RODigitalIO 4, input - limitSwitchBottom
-ROAnaglog
+RODigitalIO 5 output - fire
+ROAnaglogs
 ROAnalog 0 - pressureSensor
 ROSolenoids
-ROSolenoid O -  fire0
-ROSolenoid 1 -  fire1
 ROSolenoid 2 - shiftUp
 ROSolenoid 3 - shiftDown
 ROSolenoid 7 - statusLED
@@ -93,11 +92,10 @@ RODigitalIO compressorShutoff(2, INPUT);
 
 RODigitalIO limitSwitchTop(3, INPUT);
 RODigitalIO limitSwitchBottom(4, INPUT);
+RODigitalIO fire(5, OUTPUT);
 
 ROAnalog pressureSensor(0);
 
-ROSolenoid fire0(0);
-ROSolenoid fire1(1);
 ROSolenoid shiftUp(2);
 ROSolenoid shiftDown(3);
 ROSolenoid statusLED(7);
@@ -172,7 +170,9 @@ void statusLEDSet(float bps)
 
 boolean atPressure()
 {
-  return ((pressure() - targetPSI.get()) > -THRESHOLD);
+  if (compressor0.read() && (pressure() - targetPSI.get()) > THRESHOLD)  return true;
+  else if (!compressor0.read() && (pressure() - targetPSI.get()) > -THRESHOLD)  return true;
+  else return false;
 }
 
 #ifdef LEDS
@@ -200,8 +200,8 @@ void enabled()
 #endif
 
   // drive
-  int leftPower = 0;
-  int rightPower = 0;
+  int leftPower = 127;
+  int rightPower = 127;
   if (tank)
   {
     leftPower = usb1.leftY();
@@ -210,15 +210,17 @@ void enabled()
   else
   {
     leftPower =
-      constrain(255 - (usb1.rightY() - usb1.rightX() + 127), 0, 255);
-    rightPower =
-      constrain(255 - (usb1.rightY() + usb1.rightX() - 127), 0, 255);
+      constrain(255 - ((usb1.rightX()) - (usb1.rightY()) + 127), 0, 255);
+    rightPower = 255 -
+      constrain(255 - ((usb1.rightX()) + (usb1.rightY()) - 127), 0, 255);
   }
 
+  //leftDriveFront.write(usb1.leftY());
   leftDriveFront.write(leftPower);
   leftDriveBack.write(leftPower);
-  rightDriveFront.write(rightPower);
-  rightDriveBack.write(rightPower);
+  //rightDriveFront.write(usb1.rightY());
+  rightDriveFront.write(255-rightPower);
+  rightDriveBack.write(255-rightPower);
   
   //switches between tank and arcade
   if (TANK)
@@ -264,7 +266,6 @@ void enabled()
         }
         compressing = true;
         COMP_ON
-          ;
       }
   }
   else
@@ -288,13 +289,11 @@ void enabled()
   //buttons and valves to fire
   if (FIRE)
   {
-    fire0.on();
-    fire1.on();
+    fire.on();
   }
   else
   {
-    fire0.off();
-    fire1.off();
+    fire.off();
   }
   //lifts the barrel
   unsigned char val = 127;
@@ -304,12 +303,12 @@ void enabled()
     val = (float) (127.0 - (LIFT_SPEED * 128.0));
 
   //limit switches at top and bottom to limit movement of the barrel
-  if (!limitSwitchTop.read() && val > 0)  
-    val = 0;
-  if (!limitSwitchBottom.read() && val < 0) 
-    val = 0;
+  if (!limitSwitchTop.read() && val < 0)  
+    val = 127;
+  if (!limitSwitchBottom.read() && val > 0) 
+    val = 127;
 
-  lift.write(val);
+  lift.write(255-val);
 }
 
 /* This is called while the robot is disabled
@@ -344,12 +343,13 @@ void timedtasks()
   else
     statusLED.off();
     
-  RODashboard.publish("Target Pressure", targetPSI.get());
+  RODashboard.publish("Target Pressure", (int)targetPSI.get());
   RODashboard.publish("At Pressure?", atPressure());
-  RODashboard.publish("Pressure", pressure());
+  RODashboard.publish("Pressure", (int)pressure());
   RODashboard.publish("Battery Voltage", ROStatus.batteryReading());
+
 /*
-  RODashboard.publish("Compressor", compressor0.read());
+  RODashboard.publish("LeftX", usb1.leftY());
   RODashboard.publish("Status LED", led);
   RODashboard.publish("Compressor Shutoff", SHUTOFF);
   RODashboard.publish("D-Pad & lift", val);

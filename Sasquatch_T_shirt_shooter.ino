@@ -348,6 +348,9 @@ void timedtasks()
   RODashboard.publish("Pressure", (int)pressure());
   RODashboard.publish("Battery Voltage", ROStatus.batteryReading());
 
+  RODashboard.publish("Top Limit", limitSwitchTop.read());
+  RODashboard.publish("Bottom Limit", limitSwitchBottom.read());
+  
 /*
   RODashboard.publish("LeftX", usb1.leftY());
   RODashboard.publish("Status LED", led);

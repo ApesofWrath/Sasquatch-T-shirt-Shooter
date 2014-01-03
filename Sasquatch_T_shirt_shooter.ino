@@ -96,8 +96,8 @@ RODigitalIO fire(5, OUTPUT);
 
 ROAnalog pressureSensor(0);
 
-ROSolenoid shiftUp(2);
-ROSolenoid shiftDown(3);
+ROSolenoid shiftUp(0);
+ROSolenoid shiftDown(1);
 ROSolenoid statusLED(7);
 
 ROCharParameter targetPSI("Target Pressure", 0);
@@ -238,7 +238,7 @@ void enabled()
     shiftUp.on();
     shiftDown.off();
   }
-  else if (SHIFT_DOWN)
+  if (SHIFT_DOWN)
   {
     shiftUp.off();
     shiftDown.on();
@@ -303,10 +303,12 @@ void enabled()
     val = (float) (127.0 - (LIFT_SPEED * 128.0));
 
   //limit switches at top and bottom to limit movement of the barrel
-  if (!limitSwitchTop.read() && val < 0)  
+  if (!limitSwitchTop.read() && val > 127)  
     val = 127;
-  if (!limitSwitchBottom.read() && val > 0) 
+  if (!limitSwitchBottom.read() && val < 127) 
     val = 127;
+    
+    //RODashboard.publish("val",val);
 
   lift.write(255-val);
 }
@@ -348,8 +350,8 @@ void timedtasks()
   RODashboard.publish("Pressure", (int)pressure());
   RODashboard.publish("Battery Voltage", ROStatus.batteryReading());
 
-  RODashboard.publish("Top Limit", limitSwitchTop.read());
-  RODashboard.publish("Bottom Limit", limitSwitchBottom.read());
+  //RODashboard.publish("shift up", SHIFT_UP);
+  //RODashboard.publish("down", SHIFT_DOWN);
   
 /*
   RODashboard.publish("LeftX", usb1.leftY());

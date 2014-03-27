@@ -61,8 +61,11 @@ ROSolenoid 7 - statusLED
 #define MAX_PSI     (67.0)
 #define MAX_P_V     (5.0)
 #define MIN_P_V     (0.0)
+#define DUTY_NORM   (0.5)
+#define DUTY_DIS    (0.9)
 #define ON          (0)
 #define OFF         (-1)
+#define DISABLE     (1.2)
 #define BLINK       (2)
 #define BLINKFAST   (4)
 #define ERR         (9)
@@ -111,6 +114,7 @@ boolean tank = true;
 boolean compressing = false;
 
 float rateLED = 0;
+float dutyLED = DUTY_NORM;
 
 unsigned long startTime = 0;
 
@@ -138,7 +142,13 @@ float pressure()
 
 boolean timesUp()
 {
-  return (millis() - startTime) >= (1000 / rateLED);
+  float duty;
+  if (led)
+    duty = dutyLED;
+  else
+    duty = 1 - dutyLED;
+    
+  return (millis() - startTime) >= ((2000 / rateLED) * duty);
 }
 
 //possible states:
@@ -193,8 +203,10 @@ void setLEDs(unsigned long rgb)
  * should live here that allows the robot to operate
  */
 void enabled()
-{
-
+{  
+  //set up status LED for being enabled
+  dutyLED = DUTY_NORM;
+  statusLEDSet(BLINK);
 #ifdef LEDS
   setLEDs((unsigned long)RGB.get());
 #endif
@@ -275,14 +287,17 @@ void enabled()
   }
   if (!compressing && rateLED == BLINKFAST)
   {
+    dutyLED = DUTY_NORM;
     statusLEDSet(OFF);
   }
   if (SHUTOFF && (PRESSURIZE || compressing) && rateLED != ERR)
   {
+    dutyLED = DUTY_NORM;
     statusLEDSet(ERR);
   }
   else if (SHUTOFF && (!PRESSURIZE && !compressing) && rateLED == ERR)
   {
+    dutyLED = DUTY_NORM;
     statusLEDSet(OFF);
   }
   
@@ -320,6 +335,9 @@ void disabled()
 {
   // safety code
   COMP_OFF;
+  // make the status light show us when we are disabled
+  dutyLED = DUTY_DIS;
+  statusLEDSet(DISABLE);
 }
 
 /* This loop ALWAYS runs - only place code here that can run during a disabled state
@@ -327,18 +345,9 @@ void disabled()
  */
 void timedtasks()
 {
-  if (ROStatus.isEnabled() && rateLED <= 0)
-  {
-    statusLEDSet(BLINK);
-  }
-  else if (!ROStatus.isEnabled() && rateLED != OFF)
-  {
-    statusLEDSet(OFF);
-  }
   if (timesUp() && rateLED > 0)
   {
     statusLEDSet(rateLED);
-   
   }
   if (led)
     statusLED.on();
@@ -346,7 +355,7 @@ void timedtasks()
     statusLED.off();
     
   RODashboard.publish("Target Pressure", (int)targetPSI.get());
-  RODashboard.publish("At Pressure?", atPressure());
+  //RODashboard.publish("At Pressure?", atPressure());
   RODashboard.publish("Pressure", (int)pressure());
   RODashboard.publish("Battery Voltage", ROStatus.batteryReading());
 
